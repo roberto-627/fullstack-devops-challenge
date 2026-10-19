@@ -1,0 +1,71 @@
+name: CD
+
+on:
+    push:
+        branches: [devel, stage]
+    workflow_dispatch: 
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        environment: ${{ github.ref_name }}
+        permissions:
+          contents: read
+          id-token: write
+        env:
+          TF_IN_AUTOMATION: "true"
+          TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
+          TF_VAR_region: ${{ vars.GCP_REGION }}
+          TF_VAR_public_access: ${{ vars.PUBLIC_ACCESS || 'false' }}
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Set up Node Js
+              uses: actions/setup-node@v4
+              with:
+                node-version-file: .nvmrc
+            
+            - name: Install
+              run: npm install
+              
+            - name: Build
+              run: npm run build
+
+            - name: Auth
+              uses: 'google-github-actions/auth@v2'
+              with:
+                workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+                service_account: ${{ secrets.DEPLOY_SA }}
+
+            - name: Terraform
+              uses: hashicorp/setup-terraform@v3
+              with:
+                terraform_wrapper: false
+                
+            - name: Terraform init
+              working-directory: terraform
+              run: |
+                terraform init -input=false \
+                  -backend-config="bucket=${{secrets.TF_STATE_BUCKET}}" \
+                  -backend-config="prefix=fullstack"
+            
+            - name: Select workspace (${{ github.ref_name }})
+              working-directory: terraform
+              run: terraform workspace select -or-create "${{ github.ref_name }}"
+
+            - name: Terraform Vaidate
+              working-directory: terraform
+              run: terraform validate
+
+            - name: Terraform Plan
+              working-directory: terraform
+              run: terraform plan -input=false -out=tfplan
+
+            - name: Terraform Apply
+              working-directory: terraform
+              run: terraform apply -input=false tfplan
+              
+
+            
