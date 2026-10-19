@@ -9,7 +9,7 @@ test("network Address is calculated correctly", () => {
 test("first address is calculated correctly", () => {
   // using 192.168.100.14/20 CIDR
   const ipv4 = new IPv4([192, 168, 100, 14], 20);
-  expect(ipv4.firstUsableAddress()).toBe("192.168.96");
+  expect(ipv4.firstUsableAddress()).toBe("192.168.96.1");
 });
 
 test("first address (AWS) is calculated correctly", () => {
