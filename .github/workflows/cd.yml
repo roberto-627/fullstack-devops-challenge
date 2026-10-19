@@ -1,0 +1,63 @@
+name: CD
+
+on:
+    push:
+        branches: [devel, stage]
+    workflow_dispatch: 
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        environment: $${{github.ref_name}}
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Set up Node Js
+              uses: actions/setup-node@v4
+              with:
+                node-version-file: .nvmrc
+            
+            - name: Install
+              run: npm install
+              
+            - name: Build
+              run: npm run build
+
+            - name: Auth
+              uses: 'google-github-actions/auth@v3'
+              with:
+                service_account: ${{vars.DEPLOY_SA}}
+                workload_identity_provider: ${{vars.WIF_PROVIDER}}
+
+            - name: Terraform
+              uses: hashicorp/setup-terraform@v3
+              with:
+                terraform_wrapper: false
+                
+            - name: Terraform init
+              working-directory: terraform
+              run: |
+                terrafom init -input=false \
+                  -backend-config="bucket=${{vars.TF_STATE_BUCKET}}" \
+                  -backend-config="prefix=fullstack"
+            
+            - name: Select workspace (${{ github.ref_name }})
+              working-directory: terraform
+              run: terraform workspace select -or-create "${{ github.ref_name }}"
+
+            - name: Terraform Vaidate
+              working-directory: terraform
+              run: terraform validate
+
+            - name: Terraform Plan
+              working-directory: terraform
+              run: terraform plan -input=false -out=tfplan
+
+            - name: Terraform Apply
+              working-directory: terraform
+              run: terraform apply -input=false tfplan
+              
+
+            
