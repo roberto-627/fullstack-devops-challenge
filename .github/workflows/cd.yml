@@ -14,7 +14,7 @@ jobs:
           id-token: write
         env:
           TF_IN_AUTOMATION: "true"
-          TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_public_access: ${{ vars.PUBLIC_ACCESS || 'false' }}
 
         steps:
@@ -35,8 +35,8 @@ jobs:
             - name: Auth
               uses: 'google-github-actions/auth@v2'
               with:
-                workload_identity_provider: ${{ vars.WIF_PROVIDER }}
-                service_account: ${{ vars.DEPLOY_SA }}
+                workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+                service_account: ${{ secrets.DEPLOY_SA }}
 
             - name: Terraform
               uses: hashicorp/setup-terraform@v3
@@ -47,7 +47,7 @@ jobs:
               working-directory: terraform
               run: |
                 terraform init -input=false \
-                  -backend-config="bucket=${{vars.TF_STATE_BUCKET}}" \
+                  -backend-config="bucket=${{secrets.TF_STATE_BUCKET}}" \
                   -backend-config="prefix=fullstack"
             
             - name: Select workspace (${{ github.ref_name }})

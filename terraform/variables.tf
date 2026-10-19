@@ -1,11 +1,11 @@
 # In this file put the variables related to the deployment
 variable "project_id" {
-    type = "string"
+    type = string
     description = "GCP Project ID"
 }
 
 variable "region" {
-    type = "string"
+    type = string
     description = "GCP Region"
 }
 
