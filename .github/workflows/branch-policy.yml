@@ -1,0 +1,28 @@
+name: Branch policy
+
+on:
+  pull_request:
+    branches: [devel, stage]
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  source-branch:
+    runs-on: ubuntu-latest
+    env:
+      HEAD_REF: ${{ github.head_ref }}
+      BASE_REF: ${{ github.base_ref }}
+    steps:
+      - name: Validate source branch
+        run: |
+          if [ "$BASE_REF" = "stage" ] && [ "$HEAD_REF" != "devel" ]; then
+            echo "::error::Only 'devel' may be merged into 'stage' (got '$HEAD_REF')"
+            exit 1
+          fi
+          if [ "$BASE_REF" = "devel" ] && ! [[ "$HEAD_REF" =~ ^(feature|bugfix)/[a-z0-9._-]+$ ]]; then
+            echo "::error::PRs into 'devel' must come from feature/<name> or bugfix/<name> (got '$HEAD_REF')"
+            exit 1
+          fi
+          echo "Branch policy OK: $HEAD_REF -> $BASE_REF"
