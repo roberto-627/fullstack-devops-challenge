@@ -63,7 +63,7 @@ resource "google_storage_bucket_iam_member" "log_writer" {
 }
 
 resource "google_storage_bucket" "site" {
-  name                        = "${var.project_id}-rdicidr-${local.env}"
+  name                        = "${var.project_id}-fullstack-${local.env}"
   location                    = var.region
   uniform_bucket_level_access = true
   public_access_prevention    = var.public_access ? "inherited" : "enforced"
